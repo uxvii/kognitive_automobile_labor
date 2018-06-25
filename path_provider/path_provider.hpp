@@ -8,23 +8,23 @@
 #include <tf2_ros/transform_listener.h>
 #include "path_provider_ros_tool/PathProviderParameters.h"
 #include <ros/service_client.h>
-// PCL specific includes
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-
+#include <cmath>
 #include "std_msgs/MultiArrayLayout.h"
 #include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/Int32MultiArray.h"
 
 
 
+#include <visualization_msgs/Marker.h>
 
+#include <grid_map_ros/grid_map_ros.hpp>
+#include <grid_map_msgs/GridMap.h>
+
+using namespace grid_map;
 namespace path_provider_ros_tool {
 
 class PathProvider {
@@ -42,8 +42,9 @@ private:
      */
     void callbackTimer(const ros::TimerEvent&);
 
-    void callback_pixel_to_3d(const std_msgs::Int32MultiArray::ConstPtr& array);
-    void callback_pcl(const sensor_msgs::PointCloud2ConstPtr& pcd);
+    void callback_uv(const std_msgs::Int32MultiArray::ConstPtr& array);
+
+    double signedAngleBetween(const Eigen::Vector3d& a, const Eigen::Vector3d& b);
 
 
     ros::Timer timer_;
@@ -58,13 +59,10 @@ private:
     /**
      *publisher and subscribers of the class
      */
-
+     ros::Publisher publisher_map_ ;
     ros::Publisher publisher_path_;          ///< Path publisher
-    //image_transport::ImageTransport image_transport_; ///< bildverarbeitung  node init
-    //image_transport::CameraSubscriber subscriber_;    ///< Subscribes to the depth image
-     ros::Subscriber sub_pcl_;
      ros::Subscriber sub_uv_;
-     //ros::Subscriber sub_stargazer_;
+
 
 
     /**
@@ -73,7 +71,17 @@ private:
 
   //  std::map<double, Eigen::Affine3d> poses_;     //map  of  position    container       every element is tf_point_to_map_eigen
     nav_msgs::Path::Ptr path_{new nav_msgs::Path};
-    pcl::PointCloud<pcl::PointXYZ> cloud;
+
+  Eigen::Vector2f f_forward;
+  std::vector<int> array;
+
+
+  ros::Publisher marker_pub;
+  GridMap map_;
+
+
+
+
 
 };
 
