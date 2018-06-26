@@ -11,7 +11,7 @@
 #include <boost/math/special_functions/sign.hpp>
 #include "safe_iterator_operations.h"
 #include <ros/package.h>
-
+#include <cmath>
 
 namespace path_from_bag_ros_tool {
 
@@ -64,68 +64,7 @@ PathFromBag::PathFromBag(ros::NodeHandle nhPublic, ros::NodeHandle nhPrivate)
 
     interface_.traffic_sign_subscriber->registerCallback(&PathFromBag::traffic_sign_callback, this);
 
-  /*/  ##########################################
-  geometry_msgs::PoseStamped tf_point_to_camera_pose_ros; //point to camera positon in ros form
-   geometry_msgs::PoseStamped tf_point_to_map_pose_ros;
-   Eigen::Affine3d tf_camera_to_map_eigen;
-  Eigen::Affine3d tf_point_to_camera_eigen; //point to cam in eigen form
-  Eigen::Affine3d tf_point_to_map_eigen;  //point to map
 
-  try {
-                   ros::Time now = ros::Time::now();
-                   const geometry_msgs::TransformStamped tf_camera_to_map_ros{tfBuffer_.lookupTransform(
-                       interface_.frame_id_map, interface_.frame_id_ir, ros::Time(0), ros::Duration(3))};
-                   tf::transformMsgToEigen(tf_camera_to_map_ros.transform, tf_camera_to_map_eigen);
-
-                 } catch (const tf2::TransformException& e) {
-                     ROS_WARN_STREAM(e.what());
-                     return;
-                 }
-
-  tf_point_to_camera_pose_ros.pose.position.x=0;
-  tf_point_to_camera_pose_ros.pose.position.y=0.2;
-  tf_point_to_camera_pose_ros.pose.position.z=500;
- tf_point_to_camera_pose_ros.pose.orientation.x =0;
-  tf_point_to_camera_pose_ros.pose.orientation.y =0;
-  tf_point_to_camera_pose_ros.pose.orientation.z =0;
-  tf_point_to_camera_pose_ros.pose.orientation.w =0;
-
-      tf::poseMsgToEigen(tf_point_to_camera_pose_ros.pose, tf_point_to_camera_eigen);//ros pos  to eigen
-      tf_point_to_map_eigen=tf_camera_to_map_eigen*tf_point_to_camera_eigen;
-      tf::poseEigenToMsg(tf_point_to_map_eigen, tf_point_to_map_pose_ros.pose);
-
-
-
-   if(tf_point_to_map_pose_ros.pose.position.x >0)
-       { this->state=13;ROS_INFO("fuck you");}
-   else
-        this->state=14;
-
-
-
-	this->state=14;
-
-    switch(state){
-      case(1):path_=path_1_;break;
-      case(2):path_=path_2_;break;
-      case(3):path_=path_3_;break;
-      case(4):path_=path_4_;break;
-      case(5):path_=path_5_;break;
-      case(6):path_=path_6_;break;
-      case(7):path_=path_7_;break;
-      case(8):path_=path_8_;break;
-      case(9):path_=path_9_;break;
-      case(10):path_=path_10_;break;
-      case(11):path_=path_11_;break;
-      case(12):path_=path_12_;break;
-      case(13):path_=path_13_;break;
-      case(14):path_=path_14_;break;
-      case(15):path_=path_15_;break;
-      case(16):path_=path_16_;break;
-
-    }
-*/
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
     rosinterface_handler::showNodeInfo();
 this->state=0;
@@ -147,7 +86,13 @@ void PathFromBag::traffic_sign_callback(const std_msgs::Int32MultiArray::ConstPt
 void PathFromBag::callbackTimer(const ros::TimerEvent&){//check the state and acivate the read ros bag
 
  if(this->state==0){
-		       geometry_msgs::PoseStamped tf_point_to_camera_pose_ros; //point to camera positon in ros form
+
+
+
+//++++++++++++++++++++++++++++prepare  the point of z 500+++++++++++++++++++++++++
+//                              tf_point_to_map_pose_ros.pose.position.x  / y
+
+		   geometry_msgs::PoseStamped tf_point_to_camera_pose_ros; //point to camera positon in ros form
 		   geometry_msgs::PoseStamped tf_point_to_map_pose_ros;
 		   Eigen::Affine3d tf_camera_to_map_eigen;
 		  Eigen::Affine3d tf_point_to_camera_eigen; //point to cam in eigen form
@@ -175,18 +120,94 @@ void PathFromBag::callbackTimer(const ros::TimerEvent&){//check the state and ac
 		      tf::poseMsgToEigen(tf_point_to_camera_pose_ros.pose, tf_point_to_camera_eigen);//ros pos  to eigen
 		      tf_point_to_map_eigen=tf_camera_to_map_eigen*tf_point_to_camera_eigen;
 		      tf::poseEigenToMsg(tf_point_to_map_eigen, tf_point_to_map_pose_ros.pose);
+//////////////////
+
+//++++++++++++++++++++++++++++prepare  6 starting points +++++++++++++++++++++++++
+Eigen::Vector2f p1; p1.x()= ; p1.y()= ;
+Eigen::Vector2f p2; p2.x()= ; p2.y()= ;
+Eigen::Vector2f p3; p3.x()= ; p3.y()= ;
+Eigen::Vector2f p4; p4.x()= ; p4.y()= ;
+Eigen::Vector2f p5; p5.x()= ; p5.y()= ;
+Eigen::Vector2f p6; p6.x()= ; p6.y()= ;
+///////
+
+//++++++++++++++++++++++++++++get the pose of the car +++++++++++++++++++++++++
+Eigen::Vector3d vehicle_position = tf_camera_to_map_eigen.translation();
+///////
+
+//++++++++++++++++++++++++++++cal the distance     find the index of the smallest distance+++++++++++++++++++++++++
+std::vector<double> distance;
+double d1=pow(  ( pow(vehicle_position.x()-p1.x(),2)+pow(vehicle_position.y()-p1.y(),2))      ,      0.5   );
+distance.push_back(d1);
+double d2=pow(  ( pow(vehicle_position.x()-p2.x(),2)+pow(vehicle_position.y()-p2.y(),2))      ,      0.5   );
+distance.push_back(d2);
+double d3=pow(  ( pow(vehicle_position.x()-p3.x(),2)+pow(vehicle_position.y()-p3.y(),2))      ,      0.5   );
+distance.push_back(d3);
+double d4=pow(  ( pow(vehicle_position.x()-p4.x(),2)+pow(vehicle_position.y()-p4.y(),2))      ,      0.5   );
+distance.push_back(d4);
+double d5=pow(  ( pow(vehicle_position.x()-p5.x(),2)+pow(vehicle_position.y()-p5.y(),2))      ,      0.5   );
+distance.push_back(d5);
+double d6=pow(  ( pow(vehicle_position.x()-p6.x(),2)+pow(vehicle_position.y()-p6.y(),2))      ,      0.5   );
+distance.push_back(d6);
 
 
+int minPos = 0;
+for (unsigned i = 0; i < distance.size(); ++i)
+    {
+        if (distance[i] < distance[minPos]) // Found a smaller min
+            minPos = i;
+    }
 
-		   if(tf_point_to_map_pose_ros.pose.position.x >0)
-		       { this->state=13;ROS_INFO("fuck you");
 
-                        system("rosrun dynamic_reconfigure dynparam set longitudinal_controller velocity 0.5");}
+//++++++++++++++++++++++++++++switch case +++++++++++++++++++++++++
+switch(minPos){
+      case(0):{   if(tf_point_to_map_pose_ros.pose.position.x >0)
+                      { this->state=13;   ROS_INFO("fuck you");system("rosrun dynamic_reconfigure dynparam set longitudinal_controller velocity 0.5");}
 
-		   else
-			{this->state=14;
-                            system("rosrun dynamic_reconfigure dynparam set longitudinal_controller velocity 0.8");}
+                  else
+               		 	{this->state=14;system("rosrun dynamic_reconfigure dynparam set longitudinal_controller velocity 0.8");}
+          break;}//end case 0
 
+      case(2):{   if(tf_point_to_map_pose_ros.pose.position.x >0)
+                          { this->state=14;  }
+
+                  else
+                   		 	{this->state=13;}
+          break;}//end case 0
+
+      case(3):{   if(tf_point_to_map_pose_ros.pose.position.x >0)
+                              { this->state=15;  }
+
+                  else
+                            {this->state=16;}
+          break;}//end case 0
+
+      case(5):{   if(tf_point_to_map_pose_ros.pose.position.x >0)
+                                  { this->state=16;  }
+
+                  else
+                                {this->state=15;}
+          break;}//end case 0
+
+
+      case(1):{   if(tf_point_to_map_pose_ros.pose.position.y >0)
+                                      { this->state=14;  }
+
+                  else
+                                    {this->state=13;}
+              break;}//end case 0
+
+        case(4):{   if(tf_point_to_map_pose_ros.pose.position.y >0)
+                                              { this->state=16;  }
+
+                    else
+                                            {this->state=15;}
+                break;}//end case 0
+
+   }//end switch
+
+
+//////////////////////////////////////////////////////////////////////////
 
 		switch(state){
 		      case(1):path_=path_1_;break;
